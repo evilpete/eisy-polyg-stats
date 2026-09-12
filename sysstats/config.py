@@ -20,6 +20,13 @@ Other recognised keys:
 
     temp_unit     = C | F          (default C)
     io_interval   = 1              (seconds, first disk io sample)
+    decimals      = false          (see below)
+
+IoX has been observed displaying the digits it is sent with the decimal
+point simply removed -- 33.0 renders as 330 -- because the editor precision
+is not applied.  So by default every value is rounded to a whole number.
+Set `decimals = true` if your IoX does honour the editor precision, and the
+fractional digits come back.
 """
 
 from .registry import METRICS, METRICS_BY_NAME, MAX_MOUNTS
@@ -37,6 +44,7 @@ class Config:
         self.args = {m.name: list(m.default_args) for m in METRICS}
         self.temp_unit = 'C'
         self.io_interval = 1
+        self.decimals = False
         self.errors = []
 
     @property
@@ -48,7 +56,7 @@ class Config:
 
     def signature(self):
         """Everything that changes the shape of the ISY profile."""
-        parts = [self.temp_unit]
+        parts = [self.temp_unit, 'dec' if self.decimals else 'int']
         for metric in METRICS:
             if not self.enabled[metric.name]:
                 continue
@@ -92,6 +100,8 @@ class Config:
                     self.temp_unit = unit
                 else:
                     self.errors.append("temp_unit must be C or F, got '%s'" % value)
+            elif low == 'decimals':
+                self.decimals = value.lower() in TRUE_WORDS or value == ''
             elif low == 'io_interval':
                 try:
                     self.io_interval = max(1, min(10, int(float(value))))

@@ -18,7 +18,7 @@ Driver map
   GV21 - GV24     disk iostats  read MB/s, write MB/s, read IOPS, write IOPS
   GV30 - GV32     network utilization  percent, rx kbit/s, tx kbit/s
   GV33            network errors + drops
-  GV34            system uptime
+  GV34 - GV36     system uptime  days, hours, minutes
 """
 
 # Editor ids emitted into profile/editor/editors.xml
@@ -28,16 +28,26 @@ E_LOAD = 'SS_LOAD'
 E_TEMP = 'SS_TEMP'
 E_RATE = 'SS_RATE'
 E_DAYS = 'SS_DAYS'
+E_HOURS = 'SS_HOURS'
+E_MINUTES = 'SS_MINUTES'
 
 # uom, min, max -- the temperature editor is built at runtime because its
 # uom depends on the configured unit (4 = Celsius, 17 = Fahrenheit).
+#
+# `prec` is what the editor advertises and `scale` multiplies the value
+# before it is sent.  Both only apply when decimals are enabled; without
+# them every editor drops to prec 0, and load average -- the one metric that
+# is meaningless as a whole number -- is sent x100 under a label that says
+# so.
 EDITORS = {
     E_BOOL: {'uom': 2, 'min': 0, 'max': 1, 'prec': 0},
     E_PCT: {'uom': 51, 'min': 0, 'max': 100, 'prec': 1},
-    E_LOAD: {'uom': 56, 'min': 0, 'max': 1000, 'prec': 2},
+    E_LOAD: {'uom': 56, 'min': 0, 'max': 1000, 'prec': 2, 'int_scale': 100},
     E_TEMP: {'uom': 4, 'min': -50, 'max': 250, 'prec': 1},
     E_RATE: {'uom': 56, 'min': 0, 'max': 10000000, 'prec': 1},
-    E_DAYS: {'uom': 10, 'min': 0, 'max': 36500, 'prec': 2},
+    E_DAYS: {'uom': 10, 'min': 0, 'max': 36500, 'prec': 0},
+    E_HOURS: {'uom': 56, 'min': 0, 'max': 23, 'prec': 0},
+    E_MINUTES: {'uom': 56, 'min': 0, 'max': 59, 'prec': 0},
 }
 
 MAX_MOUNTS = 8
@@ -101,7 +111,9 @@ METRICS = [
         ('GV33', 'Network Errors + Drops', E_PCT),
     ]),
     Metric('system_uptime', 'System Uptime', [
-        ('GV34', 'System Uptime', E_DAYS),
+        ('GV34', 'Uptime Days', E_DAYS),
+        ('GV35', 'Uptime Hours', E_HOURS),
+        ('GV36', 'Uptime Minutes', E_MINUTES),
     ]),
 ]
 

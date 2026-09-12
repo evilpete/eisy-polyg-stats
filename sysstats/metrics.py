@@ -336,7 +336,10 @@ class Collector:
         out['GV33'] = (bad / total * 100.0) if total else 0.0
 
     def system_uptime(self, out):
-        out['GV34'] = max(time.time() - psutil.boot_time(), 0) / 86400.0
+        seconds = int(max(time.time() - psutil.boot_time(), 0))
+        out['GV34'] = seconds // 86400
+        out['GV35'] = seconds % 86400 // 3600
+        out['GV36'] = seconds % 3600 // 60
 
     # ------------------------------------------------------------------ main
 

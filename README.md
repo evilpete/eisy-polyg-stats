@@ -22,7 +22,7 @@ One node, `System Stats`, with a driver per metric:
 * **Network utilization** -- percent of link speed plus rx/tx kbit/s for
   `eth0`, `wlan0` or whichever interface you name
 * **Network errors** -- errors + drops as a percent of packets handled
-* **System uptime** -- in days
+* **System uptime** -- days, hours and minutes
 
 ## Configuration
 
@@ -46,6 +46,15 @@ temp_unit     = F
 
 See [POLYGLOT_CONFIG.md](POLYGLOT_CONFIG.md) for the full table of metrics,
 defaults and arguments -- it is also the help text shown inside PG3.
+
+### Values are whole numbers
+
+IoX has been seen displaying the digits it is sent with the decimal point
+removed, so 33.0 °C arrives as **330**.  Every value is therefore rounded to
+a whole number.  Load average would be meaningless that way, so it is sent
+x100 under a label that says so -- *Load Average 1 min (x100)* reading 36 is
+a load of 0.36.  Set `decimals = true` if your IoX honours the editor
+precision and you want the fractional digits back.
 
 ### The node definition follows the configuration
 

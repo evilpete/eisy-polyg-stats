@@ -30,7 +30,7 @@ pick the new profile up.
 | `disk_iostats` | on | | read/write MB/s and IOPS |
 | `net_util` | on | interface, e.g. `eth0` | link utilization percent, rx/tx kbit/s |
 | `net_errors` | on | | errors + drops as percent of packets |
-| `system_uptime` | on | | uptime in days |
+| `system_uptime` | on | | uptime as days, hours and minutes |
 
 ### Other parameters
 
@@ -38,6 +38,22 @@ pick the new profile up.
 | --- | --- | --- |
 | `temp_unit` | `C` | `C` or `F`, applies to every temperature |
 | `io_interval` | `1` | seconds for the first disk I/O sample |
+| `decimals` | `false` | see **Whole numbers** below |
+
+### Whole numbers
+
+IoX has been observed showing the digits it is sent with the decimal point
+simply removed -- a CPU temperature of 33.0 renders as **330**, 88.0% memory
+as **880** -- because the editor precision is not applied.  Every value is
+therefore rounded to a whole number: 33, 88, 14.
+
+Load average is the one metric that means nothing as a whole number, so it is
+sent multiplied by 100 and its driver says so: *Load Average 1 min (x100)*
+reading 36 is a load of 0.36.
+
+If your IoX does honour the editor precision, set `decimals = true`: the
+fractional digits come back, load average is no longer scaled, and the
+`(x100)` disappears from the label.
 
 A metric may also be given its own parameter key instead of listing it in
 `display`, which is easier to edit in the UI:

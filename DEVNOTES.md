@@ -81,13 +81,27 @@ differs, so there is no addNode/config loop.
 
 If drivers ever go quiet again, this is the first thing to check.
 
-**Values are scaled integers.**  `udi_interface` 3.4.7's
-`Node.setDriver(driver, value, report, force, uom, text)` has no `prec`
-parameter (verified against the wheel, not from memory).  ISY's convention is
-that the editor's `prec` shifts the decimal, so `controller.setDriver()`
-overrides the base method to send `int(round(value * 10**prec))` -- load 1.07
-is sent as `107` under `prec="2"`.  If a value ever looks 10x/100x off in the
-Admin Console, this is the first place to look.
+**Values are whole numbers, because IoX drops the decimal point.**  This was
+wrong twice before it was right, so the evidence matters:
+
+* `udi_interface` has no `prec` anywhere -- `setDriver` sends the value
+  string as-is (verified by grepping the wheel).  Any decimal handling has to
+  come from the editor in the profile.
+* Sending `int(round(value * 10**prec))` on the assumption that IoX shifts
+  the decimal back gave 330 for 33.0 degrees, 880 for 88% memory, 21142 for
+  211.42 days.  The editor's `prec` was **not** applied.
+* Sending the real float instead gave the same thing: the reported behaviour
+  is that IoX displays the digits it is sent with the decimal point removed.
+
+So `controller.setDriver()` rounds to a whole number.  Load average is
+meaningless that way, so `registry.EDITORS` gives `SS_LOAD` an `int_scale` of
+100 and `profile._nls()` appends `(x100)` to any driver carrying a scale --
+the value is never silently multiplied.
+
+The `decimals` Custom Parameter turns this off for an IoX that does honour
+the editor precision: every editor gets its real `prec` back and all scales
+drop to 1.  It is off by default because the hardware says so.  If decimals
+ever start working, flip the default in `config.Config.__init__`.
 
 **One snapshot per counter set per poll.**  Both disk metrics share one
 `psutil.disk_io_counters()` sample and both network metrics share one
@@ -166,17 +180,23 @@ echo 1 > profile/version.txt
   are used.  Rates (MB/s, IOPS, kbit/s) fall back to raw 56 because no exact
   UOM was confirmed -- the unit lives in the NLS label instead.  If a better
   UOM exists, change it in `registry.EDITORS`.
-* **`prec` scaling** has not been confirmed against a live Admin Console.
+* **Whether `decimals = true` is ever right.**  It exists for an IoX that
+  applies the editor precision; nothing has confirmed one does.  It may also
+  be that the Admin Console needs its profile cache cleared before `prec`
+  takes effect, which would make the decimal path viable -- untested.
 * **Whether PG3 accepts status for a driver that is not in the installed
   nodedef.**  The node keeps all 27 drivers while the nodedef shows a subset;
   IoX should ignore the rest, but watch the PG3 log for complaints.
 
 ## Next steps
 
-1. Re-run on the EISY and confirm the `Invalid driver` errors are gone and the
-   node appears in the Admin Console with the expected drivers.
+1. Confirm the values now read correctly: CPU temp 33 not 330, memory 88 not
+   880, capacity 14 not 137, uptime as 211 days / 4 hours / 12 minutes, and
+   load average 36 on the `(x100)` driver for a real load of 0.36.
 2. Check every temperature source and the disk device guess on FreeBSD.
-3. Confirm the scaled-integer display is right in the Admin Console.
+3. Worth one experiment: clear the Admin Console profile cache, set
+   `decimals = true`, and see whether `prec` is honoured after all.  If it is,
+   decimals are the nicer display and the default should change.
 4. Extend the tests with faked `psutil` counters so the rate maths (kbit/s,
    IOPS, busy-time percent, error percentage) is covered by arithmetic rather
    than by whatever the host happens to be doing.
@@ -197,7 +217,12 @@ echo 1 > profile/version.txt
   describe.
 * `server.json` carries `profile_version`; bump it on a release so PG3
   reinstalls the profile.
-* Running the tests writes `profile/` in the repo only via `tempfile`, so they
-  are safe -- but any ad hoc script that calls `profile.write(cfg)` without a
-  path will rewrite the committed defaults.  Regenerate as above before
-  committing.
+* `profile.PROFILE_DIR` is where generated files land; the tests point it at
+  a temp dir so a run cannot rewrite the profile shipped in the repo.  An ad
+  hoc script that calls `profile.write(cfg)` without doing that **will**
+  rewrite the committed defaults -- regenerate as above before committing.
+* When the generated profile changes, `profile/version.txt` must end up
+  higher than the version already installed on the ISY, and `server.json`'s
+  `profile_version` should be bumped too.  Currently 2 and 1.0.1.
+* Patch scripts that edit source by string replacement must assert the match:
+  a silent no-op cost a round here when a literal `°` did not match `\u00b0`.

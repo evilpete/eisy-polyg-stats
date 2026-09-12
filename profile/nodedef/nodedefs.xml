@@ -22,6 +22,8 @@
       <st id="GV32" editor="SS_RATE" />
       <st id="GV33" editor="SS_PCT" />
       <st id="GV34" editor="SS_DAYS" />
+      <st id="GV35" editor="SS_HOURS" />
+      <st id="GV36" editor="SS_MINUTES" />
     </sts>
     <cmds>
       <sends />

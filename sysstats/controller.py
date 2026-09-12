@@ -34,7 +34,9 @@ class StatsController(udi_interface.Node):
         self.collector = None
         # base precision and uom per driver, refined once the configuration
         # arrives (the temperature editor depends on the chosen unit)
-        self.precision = {d: EDITORS[e]['prec'] for d, _, e in all_drivers()}
+        self.precision = {d: 0 for d, _, e in all_drivers()}
+        self.scale = {d: EDITORS[e].get('int_scale', 1)
+                      for d, _, e in all_drivers()}
         self.uom = {d: EDITORS[e]['uom'] for d, _, e in all_drivers()}
         self.configured = False
 
@@ -101,6 +103,8 @@ class StatsController(udi_interface.Node):
         specs = profile.editor_specs(self.config)
         layout = profile.driver_layout(self.config)
         self.precision.update({d: specs[e]['prec'] for d, _, e in layout})
+        self.scale.update({d: specs[e].get('int_scale', 1)
+                           for d, _, e in layout})
         self.uom.update({d: specs[e]['uom'] for d, _, e in layout})
 
         self.refresh_notices()
@@ -147,7 +151,13 @@ class StatsController(udi_interface.Node):
                 self.Notices[key] = message
 
     def setDriver(self, driver, value, **kwargs):
-        """Scale to the driver's precision, IoX shifts the decimal back."""
+        """Send the value the way the configuration says IoX wants it.
+
+        IoX has been seen displaying the digits it is sent with the decimal
+        point removed -- 33.0 arrives as 330 -- so unless `decimals` is set
+        the value is rounded to a whole number, after the scale that keeps
+        load average meaningful.
+        """
         prec = self.precision.get(driver, 0)
         if value is None:
             return
@@ -155,11 +165,13 @@ class StatsController(udi_interface.Node):
             # a config from PG3 dropped it, see config_handler
             self._restore_drivers()
         try:
-            scaled = int(round(float(value) * (10 ** prec)))
+            value = float(value)
         except (TypeError, ValueError):
             LOGGER.error('Bad value for %s: %r', driver, value)
             return
+        value *= self.scale.get(driver, 1)
+        value = round(value, prec) if prec else int(round(value))
         kwargs.setdefault('uom', self.uom.get(driver))
-        super().setDriver(driver, scaled, **kwargs)
+        super().setDriver(driver, value, **kwargs)
 
     commands = {'QUERY': query}

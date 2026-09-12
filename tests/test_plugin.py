@@ -4,6 +4,7 @@ Run with `python3 tests/test_plugin.py` (or under pytest).  No EISY, no MQTT
 and no pytest dependency required.
 """
 
+import atexit
 import logging
 import os
 import shutil
@@ -27,6 +28,10 @@ from sysstats.controller import StatsController  # noqa: E402
 from sysstats.registry import MOUNT_DRIVERS, all_drivers  # noqa: E402
 
 logging.getLogger('udi').setLevel(logging.CRITICAL)
+
+# never let a test rewrite the profile that ships in the repo
+profile.PROFILE_DIR = tempfile.mkdtemp(prefix='sysstats-profile-')
+atexit.register(shutil.rmtree, profile.PROFILE_DIR, True)
 
 
 def test_display_parameter():
@@ -129,17 +134,87 @@ def test_partial_config_repairs_itself():
     poly.send_config(node, [{'driver': 'ST', 'value': 1, 'uom': 2}])
     assert len(node.drivers) == len(all_drivers())
     node.setDriver('GV3', 42.5)
-    assert node.getDriver('GV3') == 425, 'percent carries one decimal'
+    assert node.getDriver('GV3') == 42, 'whole numbers by default'
 
 
-def test_values_are_scaled_to_the_editor_precision():
+def test_whole_numbers_by_default():
+    """Regression: IoX displays the digits it is sent with the decimal point
+    removed -- 33.0 rendered as 330, 0.36 load as 36, 88.0% as 880 -- because
+    the editor precision is never applied.  So values go out whole by
+    default, and load average is scaled so it survives rounding."""
     poly, node = _node()
-    poly.fire(poly.CUSTOMPARAMS, {'display': '+load_avg,+cpu_util,'
-                                             '+system_uptime'})
-    node.setDriver('GV0', 1.07)      # load average, prec 2
-    node.setDriver('GV3', 12.34)     # percent, prec 1
-    assert node.getDriver('GV0') == 107
-    assert node.getDriver('GV3') == 123
+    poly.fire(poly.CUSTOMPARAMS, {'display': '+load_avg,+cpu_util,+cpu_temp,'
+                                             '+mem_usage,+system_uptime'})
+    node.setDriver('GV0', 0.36)      # load average, sent x100
+    node.setDriver('GV3', 12.345)    # percent
+    node.setDriver('GV4', 33.04)     # temperature
+    node.setDriver('GV7', 88.0)      # percent
+    node.setDriver('GV34', 211)      # uptime days
+    assert node.getDriver('GV0') == 36
+    assert node.getDriver('GV3') == 12
+    assert node.getDriver('GV4') == 33
+    assert node.getDriver('GV7') == 88
+    assert node.getDriver('GV34') == 211
+    for value in node.drivers:
+        assert float(value['value']).is_integer(), value
+
+
+def test_scaled_drivers_say_so_in_their_label():
+    nls = profile._nls(config.parse({}))
+    assert 'Load Average 1 min (x100)' in nls
+    assert 'CPU Temperature' in nls and '(x' not in nls.split('CPU Temp')[1][:40]
+
+
+def test_decimals_can_be_turned_back_on():
+    """For an IoX that does honour the editor precision."""
+    poly, node = _node()
+    poly.fire(poly.CUSTOMPARAMS, {'decimals': 'true',
+                                  'display': '+load_avg,+cpu_temp,+mem_usage'})
+    node.setDriver('GV0', 0.363)
+    node.setDriver('GV4', 33.04)
+    node.setDriver('GV7', 88.0)
+    assert node.getDriver('GV0') == 0.36, 'no scaling when prec is honoured'
+    assert node.getDriver('GV4') == 33.0
+    assert node.getDriver('GV7') == 88.0
+    assert 'x100' not in profile._nls(node.config)
+
+
+def test_no_driver_is_off_by_a_power_of_ten():
+    """A whole poll must report exactly what the collector measured.
+
+    The host's own numbers move between samples, so the collector is pinned
+    to a fixed reading and the reporting path is what gets checked.
+    """
+    poly, node = _node()
+    poly.send_config(node, [])
+    poly.fire(poly.CUSTOMPARAMS, {})
+    poly.fire(poly.START)
+
+    measured = {'GV0': 0.36, 'GV3': 12.5, 'GV4': 33.0, 'GV7': 88.0,
+                'GV10': 13.7, 'GV20': 4.25, 'GV31': 512.4, 'GV34': 211,
+                'GV35': 4, 'GV36': 12}
+    node.collector.collect = lambda: dict(measured)
+    poly.fire(poly.POLL, 'shortPoll')
+
+    for driver, value in measured.items():
+        prec = node.precision[driver]
+        scaled = value * node.scale[driver]
+        expected = round(scaled, prec) if prec else int(round(scaled))
+        assert node.getDriver(driver) == expected, \
+            '%s reported %r for a measured %r' % (driver, node.getDriver(driver),
+                                                  value)
+        # nothing may come out a power of ten away from what was measured
+        assert node.scale[driver] in (1, 100)
+
+
+def test_uptime_is_split_into_days_hours_minutes():
+    poly, node = _node()
+    poly.fire(poly.CUSTOMPARAMS, {'display': '+system_uptime'})
+    out = {}
+    node.collector.system_uptime(out)
+    assert set(out) == {'GV34', 'GV35', 'GV36'}
+    assert 0 <= out['GV35'] <= 23 and 0 <= out['GV36'] <= 59
+    assert all(float(v).is_integer() for v in out.values())
 
 
 def test_poll_reports_only_the_enabled_drivers():

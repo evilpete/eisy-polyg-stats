@@ -1,0 +1,24 @@
+{
+  "name": "System Stats",
+  "type": "Python3",
+  "executable": "stats-poly.py",
+  "install": "install.sh",
+  "shortPoll": 30,
+  "longPoll": 300,
+  "credits": [
+    {
+      "title": "System Stats",
+      "provider": "eisy-polyg-stats",
+      "version": "1.0.0",
+      "description": "Local system statistics for EISY / Polisy (FreeBSD) via psutil",
+      "date": "2026-09-12"
+    }
+  ],
+  "description": "Lightweight plugin that reports localhost system statistics -- load average, CPU utilization and temperatures, memory and filesystem usage, disk I/O, network utilization and uptime -- to IoX. The metrics that are displayed are selectable from the Custom Parameters.",
+  "author": "Peter Shipley",
+  "documentationLink": "https://github.com/evilpete/eisy-polyg-stats/blob/master/README.md",
+  "license": "MIT",
+  "requestId": false,
+  "initialLogLevel": 20,
+  "profile_version": "1.0.0"
+}

@@ -96,7 +96,7 @@ def _nodedef(config):
 def _editors(config):
     lines = [HEADER, '<editors>\n']
     for editor, spec in sorted(editor_specs(config).items()):
-        lines.append('  <editor id="%s">\n' % editor)
+        lines.append(f'  <editor id="{editor}">\n')
         lines.append('    <range uom="%(uom)s" min="%(min)s" max="%(max)s" '
                      'prec="%(prec)s" />\n' % spec)
         lines.append('  </editor>\n')
@@ -133,7 +133,7 @@ def write(config, path=None):
     for name, content in files.items():
         os.makedirs(os.path.dirname(name), exist_ok=True)
         if _read(name) != content:
-            with open(name, 'w') as handle:
+            with open(name, 'w', encoding="utf-8") as handle:
                 handle.write(content)
             changed = True
 
@@ -145,14 +145,14 @@ def write(config, path=None):
             version = int(_read(version_file) or 0)
         except ValueError:
             version = 0
-        with open(version_file, 'w') as handle:
-            handle.write('%d\n' % (version + 1))
+        with open(version_file, 'w', encoding="utf-8") as handle:
+            handle.write(f'{version + 1}\n')
     return changed
 
 
 def _read(name):
     try:
-        with open(name) as handle:
+        with open(name, encoding="utf-8") as handle:
             return handle.read().strip() if name.endswith('version.txt') \
                 else handle.read()
     except OSError:

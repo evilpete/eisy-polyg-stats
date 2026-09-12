@@ -318,20 +318,19 @@ class Collector:
             capacity = speed * 1000000.0
             out['GV30'] = min(max(rx_bits, tx_bits) / capacity * 100.0, 100.0)
         else:
-            self._warn_once('speed', 'Link speed for %s is unknown, network '
-                                     'utilization percent not reported'
-                            % self.iface)
+            self._warn_once(f'speed', 'Link speed for {self.iface} is unknown, network '
+                                     'utilization percent not reported')
 
     def net_errors(self, out):
         now, before, elapsed = self._net_delta()
         if now is None or elapsed <= 0:
             return
-        bad = (max(now.errin - before.errin, 0) +
-               max(now.errout - before.errout, 0) +
-               max(now.dropin - before.dropin, 0) +
-               max(now.dropout - before.dropout, 0))
-        packets = (max(now.packets_recv - before.packets_recv, 0) +
-                   max(now.packets_sent - before.packets_sent, 0))
+        bad = (max(now.errin - before.errin, 0)
+               + max(now.errout - before.errout, 0)
+               + max(now.dropin - before.dropin, 0)
+               + max(now.dropout - before.dropout, 0))
+        packets = (max(now.packets_recv - before.packets_recv, 0)
+                   + max(now.packets_sent - before.packets_sent, 0))
         total = packets + bad
         out['GV33'] = (bad / total * 100.0) if total else 0.0
 

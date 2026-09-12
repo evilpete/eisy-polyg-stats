@@ -9,7 +9,7 @@
     {
       "title": "System Stats",
       "provider": "eisy-polyg-stats",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "Local system statistics for EISY / Polisy (FreeBSD) via psutil",
       "date": "2026-09-12"
     }
@@ -20,5 +20,5 @@
   "license": "MIT",
   "requestId": false,
   "initialLogLevel": 20,
-  "profile_version": "1.0.3"
+  "profile_version": "1.0.4"
 }

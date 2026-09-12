@@ -100,6 +100,15 @@ Temperatures are read from `psutil.sensors_temperatures()` first, then from
 `sysctl` (`dev.cpu.0.temperature`, `hw.acpi.thermal.tz0.temperature`),
 `nvidia-smi` for the GPU, and `smartctl` for the drive.
 
+## Tests
+
+```
+python3 tests/test_plugin.py
+```
+
+No pytest, no EISY and no MQTT required -- `tests/fake_pg3.py` stands in for
+PG3 and drives the node end to end.
+
 ## Layout
 
 ```
@@ -110,6 +119,7 @@ sysstats/metrics.py  the collectors
 sysstats/profile.py  nodedef / editors / NLS generation
 sysstats/controller.py the node
 profile/             generated profile, regenerated at run time
+tests/               PG3 stand-in and the regression suite
 ```
 
 ## License

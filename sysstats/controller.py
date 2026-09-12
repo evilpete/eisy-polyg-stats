@@ -32,10 +32,13 @@ class StatsController(udi_interface.Node):
         self.Notices = Custom(polyglot, 'notices')
         self.config = configuration.Config()
         self.collector = None
-        self.precision = {}
-        self.uom = {}
+        # base precision and uom per driver, refined once the configuration
+        # arrives (the temperature editor depends on the chosen unit)
+        self.precision = {d: EDITORS[e]['prec'] for d, _, e in all_drivers()}
+        self.uom = {d: EDITORS[e]['uom'] for d, _, e in all_drivers()}
         self.configured = False
 
+        polyglot.subscribe(polyglot.CONFIG, self.config_handler)
         polyglot.subscribe(polyglot.CUSTOMPARAMS, self.parameter_handler)
         polyglot.subscribe(polyglot.START, self.start, address)
         polyglot.subscribe(polyglot.POLL, self.poll)
@@ -59,14 +62,46 @@ class StatsController(udi_interface.Node):
         self.setDriver('ST', 0)
         LOGGER.info('Stopping %s', self.name)
 
+    def config_handler(self, config):
+        """Restore the driver table after PG3 hands us a config.
+
+        The interface replaces node.drivers with whatever PG3's database
+        holds every time a config arrives, and a node the database has only
+        just learned about carries no drivers at all -- which leaves the node
+        unable to report anything.  Put our own table back, keeping the values
+        and uoms PG3 already knows, and re-add the node so the database learns
+        the drivers it is missing.
+        """
+        changed = self._restore_drivers()
+        if changed:
+            LOGGER.info('Driver table restored after PG3 config, %d driver(s) '
+                        'differed: %s', len(changed), ', '.join(sorted(changed)))
+            self.poly.addNode(self)
+
+    def _restore_drivers(self):
+        """Re-assert the full driver table.  Returns the driver names that
+        differed from it."""
+        existing = {d['driver']: d for d in (self.drivers or [])}
+        table = []
+        for driver, _, editor in all_drivers():
+            current = existing.get(driver) or {}
+            table.append({
+                'driver': driver,
+                'value': current.get('value', 0),
+                'uom': current.get('uom',
+                                   self.uom.get(driver, EDITORS[editor]['uom'])),
+            })
+        self.drivers = table
+        return set(existing) ^ {d['driver'] for d in table}
+
     def parameter_handler(self, params):
         """Re-read Custom Parameters and rebuild the profile if needed."""
         self.config = configuration.parse(params)
         self.collector = Collector(self.config)
         specs = profile.editor_specs(self.config)
         layout = profile.driver_layout(self.config)
-        self.precision = {d: specs[e]['prec'] for d, _, e in layout}
-        self.uom = {d: specs[e]['uom'] for d, _, e in layout}
+        self.precision.update({d: specs[e]['prec'] for d, _, e in layout})
+        self.uom.update({d: specs[e]['uom'] for d, _, e in layout})
 
         self.refresh_notices()
         if profile.write(self.config):
@@ -116,6 +151,9 @@ class StatsController(udi_interface.Node):
         prec = self.precision.get(driver, 0)
         if value is None:
             return
+        if not any(d['driver'] == driver for d in (self.drivers or [])):
+            # a config from PG3 dropped it, see config_handler
+            self._restore_drivers()
         try:
             scaled = int(round(float(value) * (10 ** prec)))
         except (TypeError, ValueError):

@@ -6,10 +6,14 @@ work back up.
 
 ## Where things stand
 
-Branch `claude/awesome-thompson-9dxg20`, commit "Add lightweight
-EISY/Polyglot v3 system stats plugin".  No PR opened yet.  The plugin is
-feature complete against the original request and runs clean, but see
-**Not yet verified** below -- it has never run on real EISY/FreeBSD hardware.
+Branch `claude/awesome-thompson-9dxg20`, no PR opened yet.  Feature complete
+against the original request.
+
+The first run on real EISY hardware failed with `Invalid driver` on every
+driver; the cause and fix are under **PG3 owns the driver table** below.  That
+run got as far as starting the node, loading Custom Parameters and polling, so
+the plumbing is right -- but nothing has been seen in the Admin Console yet.
+Re-test on hardware is the immediate next step.
 
 ## Layout
 
@@ -50,6 +54,32 @@ node definition selects which are displayed.  This sidesteps an ordering
 problem: `addNode()` happens in `__init__`, before Custom Parameters arrive,
 so the driver table cannot depend on the config.  Disabled drivers are simply
 never written.
+
+**PG3 owns the driver table, so it has to be re-asserted.**  This is what
+broke on the first hardware run.  `interface.py` (3.4.7, line ~800) does this
+on *every* config message:
+
+```python
+if node['address'] in self.nodes_internal:
+    n = self.nodes_internal[node['address']]
+    n.updateDrivers(node['drivers'])   # self.drivers = deepcopy(drivers)
+```
+
+It replaces the node's driver table wholesale with PG3's database copy.  For a
+node the database has only just learned about that copy is **empty**, so all
+27 drivers disappear moments after `addNode()` and every `setDriver()` logs
+`Invalid driver`, `ST` included.  A node object does not get to keep drivers
+PG3 has not stored.
+
+`controller.config_handler()` therefore subscribes to `CONFIG` and rebuilds
+the table (`_restore_drivers()`), keeping the values and uoms PG3 does know,
+and calls `addNode()` again when anything was missing so the database learns
+the full set.  `setDriver()` also self-heals if it is ever handed a driver
+that is not in the table, which covers a poll landing between the wipe and
+the `CONFIG` event.  Re-adding only happens when the driver set actually
+differs, so there is no addNode/config loop.
+
+If drivers ever go quiet again, this is the first thing to check.
 
 **Values are scaled integers.**  `udi_interface` 3.4.7's
 `Node.setDriver(driver, value, report, force, uom, text)` has no `prec`
@@ -92,17 +122,25 @@ metric or parameter names become notices rather than errors.  Full table in
 
 ## Testing
 
-No test suite yet.  What was used during development:
+```
+python3 tests/test_plugin.py      # 11 tests, no pytest and no EISY needed
+python3 -m pyflakes stats-poly.py sysstats/*.py tests/*.py
+```
 
-* A fake `udi_interface` module injected into `sys.modules` drives
-  `StatsController` end to end without PG3 or MQTT -- parameter handling,
-  profile regeneration, polling, notices, stop.  It was written to the
-  scratchpad and is **not committed**; rebuilding it is the fastest way to
-  re-verify a change.  It must stub `Node` (with a `setDriver` that rejects
-  unknown drivers), `Custom`, `Interface` and the topic constants.
-* `python3 -m pyflakes stats-poly.py sysstats/*.py` is clean.
-* Collectors were exercised directly on Linux; profile XML was parsed to
-  confirm it is well formed.
+`tests/fake_pg3.py` stands in for PG3: it records what the plugin sends,
+replays config messages (including the driver clobber above) and can fire
+`CUSTOMPARAMS`, `START`, `POLL` and `STOP`.  It uses the **real**
+`udi_interface.Node`, loaded straight from `node.py` so that paho-mqtt and
+netifaces are not needed, and falls back to an equivalent stub when the
+library is absent -- the line it prints at start up says which.  Testing
+against the real Node is the point: the stub would not have reproduced the
+hardware bug.
+
+The suite covers the documented `display` syntax, per-metric parameters, bad
+input becoming notices, profile generation and idempotency, static driver
+slots, the driver-table clobber and its repair, precision scaling, and that
+disabled metrics are never reported.  Verified to fail (3 tests) against the
+pre-fix controller, so it is not vacuous.
 
 Careful: the harness writes `profile/` in the repo working directory.
 Regenerate the defaults before committing:
@@ -114,8 +152,8 @@ echo 1 > profile/version.txt
 
 ## Not yet verified
 
-* **Never run on EISY / Polisy / FreeBSD.**  Development was on a Linux
-  container.
+* **Nothing has been seen in the IoX Admin Console yet.**  The one hardware
+  run so far died on the driver clobber.  Development is otherwise on Linux.
 * **Temperature fallbacks.**  `sysctl dev.cpu.0.temperature` and
   `hw.acpi.thermal.tz0.temperature` are written from the documented FreeBSD
   OID layout but were never read from a real sensor.  `_as_temp()` guesses
@@ -129,18 +167,22 @@ echo 1 > profile/version.txt
   UOM was confirmed -- the unit lives in the NLS label instead.  If a better
   UOM exists, change it in `registry.EDITORS`.
 * **`prec` scaling** has not been confirmed against a live Admin Console.
+* **Whether PG3 accepts status for a driver that is not in the installed
+  nodedef.**  The node keeps all 27 drivers while the nodedef shows a subset;
+  IoX should ignore the rest, but watch the PG3 log for complaints.
 
 ## Next steps
 
-1. Install on the target EISY and confirm the node appears with the expected
-   drivers, then check every temperature source and the disk device guess.
-2. Confirm the scaled-integer display is right in the Admin Console.
-3. Add a real test suite (pytest) around `config.parse`, `profile.write`
-   idempotency and the rate math, with `psutil` faked -- and commit the fake
-   `udi_interface` harness as a fixture.
-4. Consider: swap files/swap usage, per-CPU utilization, a configurable
-   interface list rather than a single NIC, and ISY alert thresholds.
-5. Open a PR when hardware testing passes.
+1. Re-run on the EISY and confirm the `Invalid driver` errors are gone and the
+   node appears in the Admin Console with the expected drivers.
+2. Check every temperature source and the disk device guess on FreeBSD.
+3. Confirm the scaled-integer display is right in the Admin Console.
+4. Extend the tests with faked `psutil` counters so the rate maths (kbit/s,
+   IOPS, busy-time percent, error percentage) is covered by arithmetic rather
+   than by whatever the host happens to be doing.
+5. Consider: swap usage, per-CPU utilization, a configurable interface list
+   rather than a single NIC, and ISY alert thresholds.
+6. Open a PR when hardware testing passes.
 
 ## Gotchas
 
@@ -155,3 +197,7 @@ echo 1 > profile/version.txt
   describe.
 * `server.json` carries `profile_version`; bump it on a release so PG3
   reinstalls the profile.
+* Running the tests writes `profile/` in the repo only via `tempfile`, so they
+  are safe -- but any ad hoc script that calls `profile.write(cfg)` without a
+  path will rewrite the committed defaults.  Regenerate as above before
+  committing.

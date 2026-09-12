@@ -20,12 +20,14 @@ Re-test on hardware is the immediate next step.
 | path | role |
 | --- | --- |
 | `stats-poly.py` | entry point: `Interface` -> `StatsController` -> `ready()` -> `runForever()` |
-| `sysstats/registry.py` | metric definitions, editor specs, the static driver slot map |
-| `sysstats/config.py` | Custom Parameters parsing (`+metric,-metric,+metric=args`) |
+| `sysstats/registry.py` | metric definitions, editor specs, the static driver slot map, and `catalog()`/`markdown_table()` behind the README table |
+| `sysstats/config.py` | Custom Parameters parsing (`+metric,-metric,+metric=args,-GV36`) |
 | `sysstats/metrics.py` | the collectors, `Collector.collect()` returns `{driver: value}` |
 | `sysstats/profile.py` | generates nodedef / editors / NLS from the config |
 | `sysstats/controller.py` | the single node, polling, notices, driver scaling |
 | `profile/` | generated profile, committed at defaults, rewritten at run time |
+| `tests/` | PG3 stand-in (`fake_pg3.py`) and the regression suite |
+| `tools/update_docs.py` | regenerates the README metric table from the registry |
 
 Data flow per poll: `POLL` -> `controller.update()` -> `Collector.collect()`
 -> `controller.setDriver()` (scales) -> `udi_interface`.
@@ -42,6 +44,19 @@ carries the configured unit.  Files are only rewritten -- and
 Cost: the Admin Console must be restarted after a config change.  The repo
 ships the default profile so a fresh install has valid files before the
 plugin ever runs.
+
+**Drivers can be blocked individually.**  `-GV36` in `display` (or
+`GV36 = false` as its own key) drops one line without disabling its metric.
+`config.Config.blocked` feeds `profile.driver_layout()`, so a blocked driver
+leaves the node definition, and `controller.update()` skips it via
+`self.reported`.  `ST` is refused because it is the node's status.  Blocking
+is part of `config.signature()`, or the profile would not be rebuilt when it
+changes.
+
+**The README metric table is generated, not written.**  `registry.catalog()`
+is the single source of truth, `tools/update_docs.py` renders it between the
+markers in README.md, and a test fails when the two diverge -- so a new
+metric cannot ship undocumented.  Run the tool after touching the registry.
 
 **Driver slots are static, not packed.**  `registry.py` hands each metric a
 fixed driver (load = GV0-GV2, cpu_util = GV3, temps = GV4-GV6, mem = GV7,
@@ -145,8 +160,9 @@ metric or parameter names become notices rather than errors.  Full table in
 ## Testing
 
 ```
-python3 tests/test_plugin.py      # 11 tests, no pytest and no EISY needed
-python3 -m pyflakes stats-poly.py sysstats/*.py tests/*.py
+python3 tests/test_plugin.py      # 21 tests, no pytest and no EISY needed
+python3 -m pyflakes stats-poly.py sysstats/*.py tests/*.py tools/*.py
+python3 tools/update_docs.py      # after changing the registry
 ```
 
 `tests/fake_pg3.py` stands in for PG3: it records what the plugin sends,
@@ -158,11 +174,13 @@ library is absent -- the line it prints at start up says which.  Testing
 against the real Node is the point: the stub would not have reproduced the
 hardware bug.
 
-The suite covers the documented `display` syntax, per-metric parameters, bad
-input becoming notices, profile generation and idempotency, static driver
-slots, the driver-table clobber and its repair, precision scaling, and that
-disabled metrics are never reported.  Verified to fail (3 tests) against the
-pre-fix controller, so it is not vacuous.
+The suite covers the documented `display` syntax, per-metric parameters,
+driver blocking, bad input becoming notices, profile generation and
+idempotency, static driver slots, the driver-table clobber and its repair,
+value formatting in both decimal modes, that disabled and blocked drivers are
+never reported, and that the README table matches the registry.  The
+regressions were each verified to fail against the code that had the bug, so
+they are not vacuous.
 
 Careful: the harness writes `profile/` in the repo working directory.
 Regenerate the defaults before committing:

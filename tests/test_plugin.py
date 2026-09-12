@@ -101,6 +101,58 @@ def test_mount_points_keep_their_driver():
         dict(profile.precisions(config.parse({}))), 'stable across calls'
 
 
+def test_a_single_driver_can_be_blocked():
+    """A metric that publishes several lines can lose one of them."""
+    cfg = config.parse({'display': '+system_uptime,+load_avg,-GV36,-GV2'})
+    assert cfg.blocked == {'GV36', 'GV2'}
+    assert cfg.is_on('system_uptime'), 'the metric itself stays on'
+    layout = [d for d, _, _ in profile.driver_layout(cfg)]
+    assert 'GV34' in layout and 'GV35' in layout, 'days and hours remain'
+    assert 'GV36' not in layout and 'GV2' not in layout
+    assert cfg.errors == []
+
+
+def test_a_blocked_driver_can_be_unblocked_and_keyed():
+    assert config.parse({'display': '-GV36,+GV36'}).blocked == set()
+    assert config.parse({'GV36': 'false'}).blocked == {'GV36'}
+    assert config.parse({'GV36': 'true'}).blocked == set()
+
+
+def test_blocking_rejects_nonsense():
+    cfg = config.parse({'display': '-GV99,-ST'})
+    assert cfg.blocked == set()
+    assert len(cfg.errors) == 2, cfg.errors
+    assert any('ST' in e for e in cfg.errors)
+
+
+def test_blocked_drivers_are_not_reported():
+    poly, node = _node()
+    poly.send_config(node, [])
+    poly.fire(poly.CUSTOMPARAMS, {'display': '+system_uptime,-GV36'})
+    node.collector.collect = lambda: {'GV34': 211, 'GV35': 4, 'GV36': 12}
+    poly.fire(poly.POLL, 'shortPoll')
+    assert node.getDriver('GV34') == 211
+    assert node.getDriver('GV35') == 4
+    assert node.getDriver('GV36') == 0, 'blocked, so never sent'
+
+
+def test_blocking_changes_the_profile_signature():
+    """Otherwise the profile would not be rebuilt when a driver is blocked."""
+    plain = config.parse({}).signature()
+    blocked = config.parse({'display': '-GV36'}).signature()
+    assert plain != blocked
+
+
+def test_readme_metric_table_matches_the_registry():
+    """Run tools/update_docs.py when this fails."""
+    sys.path.insert(0, os.path.join(ROOT, 'tools'))
+    import update_docs
+    with open(update_docs.README) as handle:
+        text = handle.read()
+    assert update_docs.current(text) == update_docs.render(), \
+        'README.md metric table is stale, run: python3 tools/update_docs.py'
+
+
 def _node(poly=None):
     poly = poly or fake_pg3.Interface()
     return poly, StatsController(poly, 'stats', 'stats', 'System Stats')

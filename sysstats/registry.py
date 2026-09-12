@@ -132,6 +132,52 @@ def mount_drivers(paths):
     return out
 
 
+# what each editor's values are measured in, for the documentation table
+UNITS = {
+    E_BOOL: '',
+    E_PCT: 'percent',
+    E_LOAD: 'load',
+    E_TEMP: 'degrees',
+    E_RATE: 'see name',
+    E_DAYS: 'days',
+    E_HOURS: 'hours',
+    E_MINUTES: 'minutes',
+}
+
+
+def catalog():
+    """(metric, driver, label, unit, default) for every driver, in order.
+
+    The single source of truth behind the README table -- a metric cannot be
+    added without the documentation following it.
+    """
+    rows = []
+    for metric in METRICS:
+        drivers = metric.drivers
+        if metric.dynamic:
+            drivers = [(MOUNT_DRIVERS[i],
+                        'Capacity of mount point %d' % (i + 1), E_PCT)
+                       for i in range(MAX_MOUNTS)]
+        for driver, label, editor in drivers:
+            rows.append((metric.name, driver, label, UNITS[editor],
+                         metric.default))
+    return rows
+
+
+def markdown_table():
+    """The README's metric table, rendered from the catalog."""
+    lines = ['| Metric | Driver | Shows in IoX | Unit | Default |',
+             '| --- | --- | --- | --- | --- |']
+    previous = None
+    for name, driver, label, unit, default in catalog():
+        shown = '`%s`' % name if name != previous else ''
+        previous = name
+        lines.append('| %s | `%s` | %s | %s | %s |'
+                     % (shown, driver, label, unit or '--',
+                        'on' if default else 'off'))
+    return '\n'.join(lines)
+
+
 def all_drivers():
     """Every driver the node can ever carry, for the node driver table."""
     out = [('ST', 'Status', E_BOOL)]

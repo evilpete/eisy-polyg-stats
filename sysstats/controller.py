@@ -32,6 +32,7 @@ class StatsController(udi_interface.Node):
         self.Notices = Custom(polyglot, 'notices')
         self.config = configuration.Config()
         self.collector = None
+        self.reported = set()
         # base precision and uom per driver, refined once the configuration
         # arrives (the temperature editor depends on the chosen unit)
         self.precision = {d: EDITORS[e]['prec'] for d, _, e in all_drivers()}
@@ -102,6 +103,7 @@ class StatsController(udi_interface.Node):
         self.collector = Collector(self.config)
         specs = profile.editor_specs(self.config)
         layout = profile.driver_layout(self.config)
+        self.reported = {d for d, _, _ in layout}
         self.precision.update({d: specs[e]['prec'] for d, _, e in layout})
         self.scale.update({d: specs[e].get('int_scale', 1)
                            for d, _, e in layout})
@@ -131,7 +133,8 @@ class StatsController(udi_interface.Node):
         if not self.configured or self.collector is None:
             return
         for driver, value in self.collector.collect().items():
-            self.setDriver(driver, value)
+            if driver in self.reported:
+                self.setDriver(driver, value)
         self.refresh_notices()
 
     def refresh_notices(self):

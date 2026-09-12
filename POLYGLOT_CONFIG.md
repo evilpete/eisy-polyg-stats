@@ -17,6 +17,21 @@ rebuilds the node definition and re-installs the profile, so the node shows
 only what you asked for -- **restart the IoX Admin Console afterwards** to
 pick the new profile up.
 
+### Blocking a single driver
+
+A metric that publishes several lines can be trimmed by blocking a driver by
+its ISY identifier, without disabling the metric itself:
+
+```
+display = +system_uptime,-GV36
+```
+
+keeps uptime but hides the minutes.  `-GV2` keeps load average without the 15
+minute figure, `-GV24` keeps the disk I/O statistics without write IOPS.  The
+identifiers are listed in the metric table in the README; `ST` is the node's
+status and cannot be blocked.  A driver may also be blocked by its own
+parameter key, `GV36 = false`.
+
 | metric | default | argument | shows |
 | --- | --- | --- | --- |
 | `load_avg` | on | | 1, 5 and 15 minute load average |
@@ -25,7 +40,7 @@ pick the new profile up.
 | `gpu_temp` | off | | GPU temperature |
 | `disk_temp` | off | device, e.g. `/dev/ada0` | drive temperature |
 | `mem_usage` | on | | memory used percent |
-| `disk_capacity` | on | mount points, max 8 | capacity percent per filesystem |
+| `disk_capacity` | on | mount points, max 8 | capacity percent per filesystem (`GV10`-`GV17`) |
 | `disk_io_util` | on | | percent of time the disks were busy |
 | `disk_iostats` | on | | read/write MB/s and IOPS |
 | `net_util` | on | interface, e.g. `eth0` | link utilization percent, rx/tx kbit/s |

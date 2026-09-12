@@ -9,6 +9,12 @@ A leading '+' enables a metric, '-' disables it, no prefix means enable.
 Anything after '=' is the metric's argument list, space (or comma-in-quotes
 free) separated.  Metrics that are not mentioned keep their default state.
 
+An individual driver can be blocked by its ISY identifier, which is how you
+drop one line of a metric without losing the rest -- `-GV36` keeps uptime but
+hides the minutes, `-GV2` keeps load average without the 15 minute figure:
+
+    display = +system_uptime,-GV36
+
 Individual metrics may also be given their own parameter key, which is handy
 in the PG3 UI:
 
@@ -32,7 +38,12 @@ rounded to whole numbers and load average is scaled x100 under a label that
 says so.
 """
 
-from .registry import METRICS, METRICS_BY_NAME, MAX_MOUNTS
+import re
+
+from .registry import METRICS, METRICS_BY_NAME, MAX_MOUNTS, all_drivers
+
+DRIVER_RE = re.compile(r'^(ST|GV\d+)$', re.IGNORECASE)
+DRIVERS = {d for d, _, _ in all_drivers()}
 
 DISPLAY_KEYS = ('display', 'metrics', 'options', 'stats')
 FALSE_WORDS = ('false', 'off', 'no', 'none', 'disable', 'disabled', '0')
@@ -48,6 +59,7 @@ class Config:
         self.temp_unit = 'C'
         self.io_interval = 1
         self.decimals = True
+        self.blocked = set()
         self.errors = []
 
     @property
@@ -57,9 +69,13 @@ class Config:
     def is_on(self, name):
         return self.enabled.get(name, False)
 
+    def shows(self, driver):
+        return driver not in self.blocked
+
     def signature(self):
         """Everything that changes the shape of the ISY profile."""
         parts = [self.temp_unit, 'dec' if self.decimals else 'int']
+        parts.extend('-' + d for d in sorted(self.blocked))
         for metric in METRICS:
             if not self.enabled[metric.name]:
                 continue
@@ -68,7 +84,22 @@ class Config:
                 parts.extend(self.args[metric.name][:MAX_MOUNTS])
         return '|'.join(parts)
 
+    def _block(self, driver, state):
+        """state False blocks the driver, True puts it back."""
+        driver = driver.upper()
+        if driver not in DRIVERS:
+            self.errors.append("unknown driver '%s'" % driver)
+        elif driver == 'ST':
+            self.errors.append('ST is the node status and cannot be blocked')
+        elif state:
+            self.blocked.discard(driver)
+        else:
+            self.blocked.add(driver)
+
     def _set(self, name, state, args):
+        if DRIVER_RE.match(name):
+            self._block(name, state)
+            return
         if name not in METRICS_BY_NAME:
             self.errors.append("unknown metric '%s'" % name)
             return
@@ -110,6 +141,8 @@ class Config:
                     self.io_interval = max(1, min(10, int(float(value))))
                 except ValueError:
                     self.errors.append("io_interval must be a number, got '%s'" % value)
+            elif DRIVER_RE.match(key):
+                self._block(key, value.lower() not in FALSE_WORDS)
             elif low in METRICS_BY_NAME:
                 if value.lower() in FALSE_WORDS:
                     self._set(low, False, None)

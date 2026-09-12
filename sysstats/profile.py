@@ -25,7 +25,11 @@ PROFILE_DIR = 'profile'
 
 
 def driver_layout(config):
-    """(driver, label, editor) for the node, in display order."""
+    """(driver, label, editor) for the node, in display order.
+
+    Drivers blocked by identifier are left out, so one line of a metric can
+    be dropped without disabling the whole metric.
+    """
     layout = [('ST', 'Status', E_BOOL)]
     for metric in METRICS:
         if not config.is_on(metric.name):
@@ -34,7 +38,7 @@ def driver_layout(config):
             layout.extend(mount_drivers(config.mounts))
         else:
             layout.extend(metric.drivers)
-    return layout
+    return [entry for entry in layout if config.shows(entry[0])]
 
 
 def editor_specs(config):

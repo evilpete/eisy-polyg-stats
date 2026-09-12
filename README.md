@@ -47,14 +47,16 @@ temp_unit     = F
 See [POLYGLOT_CONFIG.md](POLYGLOT_CONFIG.md) for the full table of metrics,
 defaults and arguments -- it is also the help text shown inside PG3.
 
-### Values are whole numbers
+### Decimals and the profile cache
 
-IoX has been seen displaying the digits it is sent with the decimal point
-removed, so 33.0 °C arrives as **330**.  Every value is therefore rounded to
-a whole number.  Load average would be meaningless that way, so it is sent
-x100 under a label that says so -- *Load Average 1 min (x100)* reading 36 is
-a load of 0.36.  Set `decimals = true` if your IoX honours the editor
-precision and you want the fractional digits back.
+Values are sent as themselves -- 33.0 °C, 0.36 load -- and IoX applies the
+precision the profile's editors declare.  This only works once IoX has
+reloaded the profile: a version it already has is served from cache, and a
+stale editor drops the decimal point, showing 33.0 as **330**.  Bump
+`profile/version.txt` and restart the Admin Console if you see that.
+
+`decimals = false` is the fallback -- whole numbers throughout, with load
+average sent x100 under a label that says so.
 
 ### The node definition follows the configuration
 

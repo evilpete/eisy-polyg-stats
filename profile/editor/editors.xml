@@ -10,18 +10,18 @@
     <range uom="56" min="0" max="23" prec="0" />
   </editor>
   <editor id="SS_LOAD">
-    <range uom="56" min="0" max="100000" prec="0" />
+    <range uom="56" min="0" max="1000" prec="2" />
   </editor>
   <editor id="SS_MINUTES">
     <range uom="56" min="0" max="59" prec="0" />
   </editor>
   <editor id="SS_PCT">
-    <range uom="51" min="0" max="100" prec="0" />
+    <range uom="51" min="0" max="100" prec="1" />
   </editor>
   <editor id="SS_RATE">
-    <range uom="56" min="0" max="10000000" prec="0" />
+    <range uom="56" min="0" max="10000000" prec="1" />
   </editor>
   <editor id="SS_TEMP">
-    <range uom="4" min="-50" max="250" prec="0" />
+    <range uom="4" min="-50" max="250" prec="1" />
   </editor>
 </editors>

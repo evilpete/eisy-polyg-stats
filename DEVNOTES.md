@@ -81,27 +81,35 @@ differs, so there is no addNode/config loop.
 
 If drivers ever go quiet again, this is the first thing to check.
 
-**Values are whole numbers, because IoX drops the decimal point.**  This was
-wrong twice before it was right, so the evidence matters:
+**Values are sent as themselves; IoX applies the editor precision.**  This
+took three rounds on hardware to pin down, and the conclusion is not what the
+first two rounds suggested, so the whole trail matters:
 
 * `udi_interface` has no `prec` anywhere -- `setDriver` sends the value
   string as-is (verified by grepping the wheel).  Any decimal handling has to
   come from the editor in the profile.
 * Sending `int(round(value * 10**prec))` on the assumption that IoX shifts
-  the decimal back gave 330 for 33.0 degrees, 880 for 88% memory, 21142 for
-  211.42 days.  The editor's `prec` was **not** applied.
-* Sending the real float instead gave the same thing: the reported behaviour
-  is that IoX displays the digits it is sent with the decimal point removed.
+  the decimal back showed 330 for 33.0 degrees, 880 for 88% memory, 21142 for
+  211.42 days.
+* Sending the real float showed the same, so it looked like IoX was dropping
+  the decimal point, and values were switched to whole numbers.
+* Then `decimals = true` was tried on hardware and **worked**.
 
-So `controller.setDriver()` rounds to a whole number.  Load average is
-meaningless that way, so `registry.EDITORS` gives `SS_LOAD` an `int_scale` of
-100 and `profile._nls()` appends `(x100)` to any driver carrying a scale --
-the value is never silently multiplied.
+The difference was not the value format at all: it was that the profile had
+finally been reinstalled.  `profile/version.txt` had sat at 1 through all of
+this, so IoX kept serving the cached editors, which carry no usable
+precision.  Once the version moved and the Admin Console was restarted, the
+editors' `prec` was honoured and floats displayed correctly.
 
-The `decimals` Custom Parameter turns this off for an IoX that does honour
-the editor precision: every editor gets its real `prec` back and all scales
-drop to 1.  It is off by default because the hardware says so.  If decimals
-ever start working, flip the default in `config.Config.__init__`.
+So the rule is: **send the real value, and make sure the profile version
+moves whenever the profile changes.**  A value that comes out a power of ten
+too large means a stale profile, not a formatting bug.
+
+`decimals = false` remains as the fallback: every editor drops to prec 0,
+values round to whole numbers, and `registry.EDITORS` gives `SS_LOAD` an
+`int_scale` of 100 so load average survives, with `profile._nls()` appending
+`(x100)` to any scaled driver -- a scaled value is never presented as the raw
+measurement.
 
 **One snapshot per counter set per poll.**  Both disk metrics share one
 `psutil.disk_io_counters()` sample and both network metrics share one
@@ -180,23 +188,18 @@ echo 1 > profile/version.txt
   are used.  Rates (MB/s, IOPS, kbit/s) fall back to raw 56 because no exact
   UOM was confirmed -- the unit lives in the NLS label instead.  If a better
   UOM exists, change it in `registry.EDITORS`.
-* **Whether `decimals = true` is ever right.**  It exists for an IoX that
-  applies the editor precision; nothing has confirmed one does.  It may also
-  be that the Admin Console needs its profile cache cleared before `prec`
-  takes effect, which would make the decimal path viable -- untested.
+* The `decimals = false` path is now the one nothing has exercised on
+  hardware; it is kept as a fallback for a console serving a stale profile.
 * **Whether PG3 accepts status for a driver that is not in the installed
   nodedef.**  The node keeps all 27 drivers while the nodedef shows a subset;
   IoX should ignore the rest, but watch the PG3 log for complaints.
 
 ## Next steps
 
-1. Confirm the values now read correctly: CPU temp 33 not 330, memory 88 not
-   880, capacity 14 not 137, uptime as 211 days / 4 hours / 12 minutes, and
-   load average 36 on the `(x100)` driver for a real load of 0.36.
-2. Check every temperature source and the disk device guess on FreeBSD.
-3. Worth one experiment: clear the Admin Console profile cache, set
-   `decimals = true`, and see whether `prec` is honoured after all.  If it is,
-   decimals are the nicer display and the default should change.
+1. Check every temperature source and the disk device guess on FreeBSD --
+   the last substantial unknown.
+2. Consider a GitHub Actions workflow so `tests/test_plugin.py` actually
+   gates the PR; there is no CI in the repo today.
 4. Extend the tests with faked `psutil` counters so the rate maths (kbit/s,
    IOPS, busy-time percent, error percentage) is covered by arithmetic rather
    than by whatever the host happens to be doing.
@@ -223,6 +226,9 @@ echo 1 > profile/version.txt
   rewrite the committed defaults -- regenerate as above before committing.
 * When the generated profile changes, `profile/version.txt` must end up
   higher than the version already installed on the ISY, and `server.json`'s
-  `profile_version` should be bumped too.  Currently 2 and 1.0.1.
+  `profile_version` should be bumped too.  Currently 3 and 1.0.2.  This is
+  not bookkeeping: a version that does not move is why the decimal display
+  looked broken for two rounds (above).  Restart the Admin Console after a
+  profile change, or it keeps rendering with the editors it already has.
 * Patch scripts that edit source by string replacement must assert the match:
   a silent no-op cost a round here when a literal `°` did not match `\u00b0`.

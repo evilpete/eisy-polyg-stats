@@ -134,49 +134,55 @@ def test_partial_config_repairs_itself():
     poly.send_config(node, [{'driver': 'ST', 'value': 1, 'uom': 2}])
     assert len(node.drivers) == len(all_drivers())
     node.setDriver('GV3', 42.5)
-    assert node.getDriver('GV3') == 42, 'whole numbers by default'
+    assert node.getDriver('GV3') == 42.5, 'percent carries one decimal'
 
 
-def test_whole_numbers_by_default():
-    """Regression: IoX displays the digits it is sent with the decimal point
-    removed -- 33.0 rendered as 330, 0.36 load as 36, 88.0% as 880 -- because
-    the editor precision is never applied.  So values go out whole by
-    default, and load average is scaled so it survives rounding."""
+def test_values_keep_their_decimals_by_default():
+    """IoX applies the precision its editors advertise, so a value is sent as
+    itself, rounded to the digits its editor declares.  (This only holds once
+    IoX has reloaded the profile -- a cached editor drops the decimal point
+    and renders 33.0 as 330, which is what `decimals = false` is for.)"""
     poly, node = _node()
     poly.fire(poly.CUSTOMPARAMS, {'display': '+load_avg,+cpu_util,+cpu_temp,'
                                              '+mem_usage,+system_uptime'})
+    node.setDriver('GV0', 0.363)     # load average, prec 2
+    node.setDriver('GV3', 12.345)    # percent, prec 1
+    node.setDriver('GV4', 33.04)     # temperature, prec 1
+    node.setDriver('GV7', 88.0)      # percent, prec 1
+    node.setDriver('GV34', 211)      # uptime days, prec 0
+    assert node.getDriver('GV0') == 0.36, 'never scaled when prec applies'
+    assert node.getDriver('GV3') == 12.3
+    assert node.getDriver('GV4') == 33.0
+    assert node.getDriver('GV7') == 88.0
+    assert node.getDriver('GV34') == 211
+    assert 'x100' not in profile._nls(node.config)
+
+
+def test_whole_numbers_when_decimals_are_off():
+    """The fallback for an IoX serving a stale editor: everything rounds to a
+    whole number and load average is scaled so it survives that."""
+    poly, node = _node()
+    poly.fire(poly.CUSTOMPARAMS, {'decimals': 'false',
+                                  'display': '+load_avg,+cpu_util,+cpu_temp,'
+                                             '+mem_usage'})
     node.setDriver('GV0', 0.36)      # load average, sent x100
-    node.setDriver('GV3', 12.345)    # percent
-    node.setDriver('GV4', 33.04)     # temperature
-    node.setDriver('GV7', 88.0)      # percent
-    node.setDriver('GV34', 211)      # uptime days
+    node.setDriver('GV3', 12.345)
+    node.setDriver('GV4', 33.04)
+    node.setDriver('GV7', 88.0)
     assert node.getDriver('GV0') == 36
     assert node.getDriver('GV3') == 12
     assert node.getDriver('GV4') == 33
     assert node.getDriver('GV7') == 88
-    assert node.getDriver('GV34') == 211
     for value in node.drivers:
         assert float(value['value']).is_integer(), value
 
 
 def test_scaled_drivers_say_so_in_their_label():
-    nls = profile._nls(config.parse({}))
-    assert 'Load Average 1 min (x100)' in nls
-    assert 'CPU Temperature' in nls and '(x' not in nls.split('CPU Temp')[1][:40]
-
-
-def test_decimals_can_be_turned_back_on():
-    """For an IoX that does honour the editor precision."""
-    poly, node = _node()
-    poly.fire(poly.CUSTOMPARAMS, {'decimals': 'true',
-                                  'display': '+load_avg,+cpu_temp,+mem_usage'})
-    node.setDriver('GV0', 0.363)
-    node.setDriver('GV4', 33.04)
-    node.setDriver('GV7', 88.0)
-    assert node.getDriver('GV0') == 0.36, 'no scaling when prec is honoured'
-    assert node.getDriver('GV4') == 33.0
-    assert node.getDriver('GV7') == 88.0
-    assert 'x100' not in profile._nls(node.config)
+    """A scaled value must never be presented as the raw measurement."""
+    scaled = profile._nls(config.parse({'decimals': 'false'}))
+    assert 'Load Average 1 min (x100)' in scaled
+    plain = profile._nls(config.parse({}))
+    assert 'Load Average 1 min\n' in plain and '(x' not in plain
 
 
 def test_no_driver_is_off_by_a_power_of_ten():

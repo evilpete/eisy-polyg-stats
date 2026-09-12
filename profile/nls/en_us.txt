@@ -5,9 +5,9 @@ ND-SYSSTATS-ICON = Output
 CMD-SS-QUERY-NAME = Query
 
 ST-SS-ST-NAME = Status
-ST-SS-GV0-NAME = Load Average 1 min (x100)
-ST-SS-GV1-NAME = Load Average 5 min (x100)
-ST-SS-GV2-NAME = Load Average 15 min (x100)
+ST-SS-GV0-NAME = Load Average 1 min
+ST-SS-GV1-NAME = Load Average 5 min
+ST-SS-GV2-NAME = Load Average 15 min
 ST-SS-GV3-NAME = CPU Utilization
 ST-SS-GV4-NAME = CPU Temperature (°C)
 ST-SS-GV7-NAME = Memory Used

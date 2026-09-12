@@ -34,7 +34,7 @@ class StatsController(udi_interface.Node):
         self.collector = None
         # base precision and uom per driver, refined once the configuration
         # arrives (the temperature editor depends on the chosen unit)
-        self.precision = {d: 0 for d, _, e in all_drivers()}
+        self.precision = {d: EDITORS[e]['prec'] for d, _, e in all_drivers()}
         self.scale = {d: EDITORS[e].get('int_scale', 1)
                       for d, _, e in all_drivers()}
         self.uom = {d: EDITORS[e]['uom'] for d, _, e in all_drivers()}

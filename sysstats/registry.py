@@ -34,11 +34,11 @@ E_MINUTES = 'SS_MINUTES'
 # uom, min, max -- the temperature editor is built at runtime because its
 # uom depends on the configured unit (4 = Celsius, 17 = Fahrenheit).
 #
-# `prec` is what the editor advertises and `scale` multiplies the value
-# before it is sent.  Both only apply when decimals are enabled; without
-# them every editor drops to prec 0, and load average -- the one metric that
-# is meaningless as a whole number -- is sent x100 under a label that says
-# so.
+# `prec` is what the editor advertises and IoX applies it, so values are
+# sent as themselves.  `int_scale` is only used when `decimals` is turned
+# off: every editor then drops to prec 0 and load average -- the one metric
+# that is meaningless as a whole number -- is sent x100 under a label that
+# says so.
 EDITORS = {
     E_BOOL: {'uom': 2, 'min': 0, 'max': 1, 'prec': 0},
     E_PCT: {'uom': 51, 'min': 0, 'max': 100, 'prec': 1},

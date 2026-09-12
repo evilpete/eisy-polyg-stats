@@ -38,22 +38,24 @@ pick the new profile up.
 | --- | --- | --- |
 | `temp_unit` | `C` | `C` or `F`, applies to every temperature |
 | `io_interval` | `1` | seconds for the first disk I/O sample |
-| `decimals` | `false` | see **Whole numbers** below |
+| `decimals` | `true` | see **Decimals** below |
 
-### Whole numbers
+### Decimals
 
-IoX has been observed showing the digits it is sent with the decimal point
-simply removed -- a CPU temperature of 33.0 renders as **330**, 88.0% memory
-as **880** -- because the editor precision is not applied.  Every value is
-therefore rounded to a whole number: 33, 88, 14.
+IoX applies the precision the profile's editors declare, so values are sent
+as themselves: a CPU temperature of 33.0, a load average of 0.36, 88.0%
+memory.
 
-Load average is the one metric that means nothing as a whole number, so it is
-sent multiplied by 100 and its driver says so: *Load Average 1 min (x100)*
-reading 36 is a load of 0.36.
+That only works once IoX has actually **reloaded the profile**.  A profile
+whose version has not changed is served from cache, and a stale editor drops
+the decimal point -- 33.0 shows as **330**, 88.0% as **880**.  If you see
+that, bump `profile/version.txt`, restart the plugin, then restart the Admin
+Console.
 
-If your IoX does honour the editor precision, set `decimals = true`: the
-fractional digits come back, load average is no longer scaled, and the
-`(x100)` disappears from the label.
+`decimals = false` is the fallback if the values still come out a power of
+ten too large: everything is rounded to a whole number, and load average --
+meaningless as an integer -- is sent multiplied by 100 under a label that
+says so, *Load Average 1 min (x100)* reading 36 for a load of 0.36.
 
 A metric may also be given its own parameter key instead of listing it in
 `display`, which is easier to edit in the UI:

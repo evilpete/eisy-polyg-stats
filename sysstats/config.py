@@ -20,13 +20,16 @@ Other recognised keys:
 
     temp_unit     = C | F          (default C)
     io_interval   = 1              (seconds, first disk io sample)
-    decimals      = false          (see below)
+    decimals      = true           (see below)
 
-IoX has been observed displaying the digits it is sent with the decimal
-point simply removed -- 33.0 renders as 330 -- because the editor precision
-is not applied.  So by default every value is rounded to a whole number.
-Set `decimals = true` if your IoX does honour the editor precision, and the
-fractional digits come back.
+IoX applies the precision its editors advertise, so values are sent as
+themselves: 33.0, 0.36, 88.0.  That only holds once IoX has actually
+reloaded the profile -- an installed profile whose version has not moved is
+served from cache, and a stale editor renders 33.0 as 330 with the decimal
+point dropped.  Bump `profile/version.txt` and restart the Admin Console if
+you see that.  Setting `decimals = false` is the fallback: everything is
+rounded to whole numbers and load average is scaled x100 under a label that
+says so.
 """
 
 from .registry import METRICS, METRICS_BY_NAME, MAX_MOUNTS
@@ -44,7 +47,7 @@ class Config:
         self.args = {m.name: list(m.default_args) for m in METRICS}
         self.temp_unit = 'C'
         self.io_interval = 1
-        self.decimals = False
+        self.decimals = True
         self.errors = []
 
     @property

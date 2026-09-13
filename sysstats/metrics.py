@@ -76,7 +76,7 @@ def _sensor(*wanted):
         return None
     for chip, entries in (sensors or {}).items():
         for entry in entries:
-            haystack = ('%s %s' % (chip, entry.label or '')).lower()
+            haystack = f"{chip} {entry.label or ''}".lower()
             if any(want in haystack for want in wanted) and entry.current:
                 return float(entry.current)
     return None
@@ -122,7 +122,7 @@ def root_disk_device():
     name = os.path.basename(dev)
     name = re.sub(r'(p\d+|s\d+[a-z]?|\d+)$', '', name) if not name.startswith('nvme') \
         else re.sub(r'n\d+p\d+$', '', name)
-    return '/dev/%s' % name if name else None
+    return f"/dev/{name}" if name else None
 
 
 def disk_temperature(device=None):
@@ -133,8 +133,12 @@ def disk_temperature(device=None):
     if not device:
         return None
     base = os.path.basename(device)
-    for oid in ('dev.%s.temperature' % base.replace('nvme', 'nvme'),
-                'dev.nvme.%s.temperature' % re.sub(r'\D', '', base)):
+    # for oid in ('dev.%s.temperature' % base.replace('nvme', 'nvme'),
+    #            'dev.nvme.%s.temperature' % re.sub(r'\D', '', base)):
+    for oid in (
+        f"dev.{base}.temperature",
+        f"dev.nvme.{re.sub(r'\D', '', base)}.temperature"
+    ):
         temp = _as_temp(_sysctl(oid))
         if temp is not None:
             return temp
@@ -249,7 +253,7 @@ class Collector:
                 out[MOUNT_DRIVERS[index]] = psutil.disk_usage(path).percent
             except OSError:
                 self._warn_once('mount:' + path,
-                                'Mount point %s is not available' % path)
+                                f"Mount point {path} is not available")
 
     def disk_io_util(self, out):
         counters, _ = self._sample or (None, None)
@@ -318,7 +322,7 @@ class Collector:
             capacity = speed * 1000000.0
             out['GV30'] = min(max(rx_bits, tx_bits) / capacity * 100.0, 100.0)
         else:
-            self._warn_once(f'speed', 'Link speed for {self.iface} is unknown, network '
+            self._warn_once('speed', f'Link speed for {self.iface} is unknown, network '
                                      'utilization percent not reported')
 
     def net_errors(self, out):
@@ -355,8 +359,7 @@ class Collector:
             self.iface = pick_interface(self._arg('net_util') or self.iface)
             counters = psutil.net_io_counters(pernic=True).get(self.iface)
             if counters is None:
-                self._warn_once('iface', 'Network interface %s not found'
-                                % self.iface)
+                self._warn_once('iface', f'Network interface {self.iface} not found')
             self._net_sample = (counters, time.time())
         except OSError:
             self._net_sample = None

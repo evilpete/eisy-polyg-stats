@@ -92,7 +92,7 @@ METRICS = [
     ]),
     Metric('disk_capacity', 'Filesystem Capacity', [], dynamic=True,
            args=['/', '/home', '/var/isy'],
-           arg_help='space separated mount points (max %d)' % MAX_MOUNTS),
+           arg_help=f'space separated mount points (max {MAX_MOUNTS})'),
     Metric('disk_io_util', 'Disk I/O Utilization', [
         ('GV20', 'Disk I/O Utilization', E_PCT),
     ]),
@@ -121,14 +121,15 @@ METRICS_BY_NAME = {m.name: m for m in METRICS}
 
 # Filesystem capacity slots, handed out in the order the mount points are
 # listed in the configuration.
-MOUNT_DRIVERS = ['GV1%d' % i for i in range(MAX_MOUNTS)]
+MOUNT_DRIVERS = [f'GV1{i}' for i in range(MAX_MOUNTS)]
+# MOUNT_DRIVERS = ['GV1%d' % i for i in range(MAX_MOUNTS)]
 
 
 def mount_drivers(paths):
     """(driver, label, editor) for each configured mount point."""
     out = []
     for i, path in enumerate(paths[:MAX_MOUNTS]):
-        out.append((MOUNT_DRIVERS[i], 'Capacity %s' % path, E_PCT))
+        out.append((MOUNT_DRIVERS[i], f'Capacity {path}', E_PCT))
     return out
 
 
@@ -156,7 +157,7 @@ def catalog():
         drivers = metric.drivers
         if metric.dynamic:
             drivers = [(MOUNT_DRIVERS[i],
-                        'Capacity of mount point %d' % (i + 1), E_PCT)
+                        f'Capacity of mount point {i + 1}', E_PCT)
                        for i in range(MAX_MOUNTS)]
         for driver, label, editor in drivers:
             rows.append((metric.name, driver, label, UNITS[editor],
@@ -170,11 +171,13 @@ def markdown_table():
              '| --- | --- | --- | --- | --- |']
     previous = None
     for name, driver, label, unit, default in catalog():
-        shown = '`%s`' % name if name != previous else ''
+        shown = f'`{name}`'if name != previous else ''
         previous = name
-        lines.append('| %s | `%s` | %s | %s | %s |'
-                     % (shown, driver, label, unit or '--',
-                        'on' if default else 'off'))
+        lines.append(f'| {shown} | `{driver}` | {label} | {unit or "--"} | '
+                     f'{"on" if default else "off"} |')
+        # lines.append('| %s | `%s` | %s | %s | %s |'
+        #              % (shown, driver, label, unit or '--',
+        #                 'on' if default else 'off'))
     return '\n'.join(lines)
 
 

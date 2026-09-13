@@ -141,7 +141,8 @@ class StatsController(udi_interface.Node):
         """Show configuration errors and unavailable counters in the UI."""
         notices = {}
         for index, error in enumerate(self.config.errors):
-            notices['cfg%d' % index] = error
+            notices[f'cfg{index}'] = error
+
         if not any(self.config.enabled.values()):
             notices['empty'] = 'No metrics are enabled, check the display ' \
                                'parameter'

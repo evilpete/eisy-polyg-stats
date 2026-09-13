@@ -88,7 +88,7 @@ class Config:
         """state False blocks the driver, True puts it back."""
         driver = driver.upper()
         if driver not in DRIVERS:
-            self.errors.append("unknown driver '%s'" % driver)
+            self.errors.append(f"unknown driver '{driver}'")
         elif driver == 'ST':
             self.errors.append('ST is the node status and cannot be blocked')
         elif state:
@@ -101,7 +101,7 @@ class Config:
             self._block(name, state)
             return
         if name not in METRICS_BY_NAME:
-            self.errors.append("unknown metric '%s'" % name)
+            self.errors.append(f"unknown metric '{name}'")
             return
         self.enabled[name] = state
         if args:
@@ -133,14 +133,14 @@ class Config:
                 if unit in ('C', 'F'):
                     self.temp_unit = unit
                 else:
-                    self.errors.append("temp_unit must be C or F, got '%s'" % value)
+                    self.errors.append(f"temp_unit must be C or F, got '{value}'")
             elif low == 'decimals':
                 self.decimals = value.lower() in TRUE_WORDS or value == ''
             elif low == 'io_interval':
                 try:
                     self.io_interval = max(1, min(10, int(float(value))))
                 except ValueError:
-                    self.errors.append("io_interval must be a number, got '%s'" % value)
+                    self.errors.append(f"io_interval must be a number, got '{value}'")
             elif DRIVER_RE.match(key):
                 self._block(key, value.lower() not in FALSE_WORDS)
             elif low in METRICS_BY_NAME:
@@ -151,12 +151,11 @@ class Config:
                 else:
                     self._set(low, True, value.replace(',', ' ').split())
             else:
-                self.errors.append("unknown parameter '%s'" % key)
+                self.errors.append(f"unknown parameter '{key}'")
 
         extra = self.args['disk_capacity'][MAX_MOUNTS:]
         if extra:
-            self.errors.append('ignoring mount points past the first %d: %s'
-                               % (MAX_MOUNTS, ' '.join(extra)))
+            self.errors.append(f"ignoring mount points past the first {MAX_MOUNTS}: {' '.join(extra)}")
             self.args['disk_capacity'] = self.args['disk_capacity'][:MAX_MOUNTS]
         return self
 

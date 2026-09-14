@@ -86,7 +86,14 @@ def cpu_temperature():
     temp = _sensor('coretemp', 'k10temp', 'cpu_thermal', 'cpu', 'acpitz')
     if temp is not None:
         return temp
-    for oid in ('dev.cpu.0.temperature', 'hw.acpi.thermal.tz0.temperature'):
+    for oid in ('dev.cpu.0.temperature'):  #  hw.acpi.thermal.tz0.temperature
+        temp = _as_temp(_sysctl(oid))
+        if temp is not None:
+            return temp
+    return None
+
+def tz_temperature():
+    for oid in ('hw.acpi.thermal.tz0.temperature', 'hw.acpi.thermal.tz1.temperature'):
         temp = _as_temp(_sysctl(oid))
         if temp is not None:
             return temp
@@ -104,7 +111,8 @@ def gpu_temperature():
             return float(out.splitlines()[0].strip())
         except ValueError:
             pass
-    return _as_temp(_sysctl('hw.acpi.thermal.tz1.temperature'))
+    return None
+
 
 
 def root_disk_device():
@@ -229,12 +237,19 @@ class Collector:
             return
         out['GV4'] = value
 
+    def tz_temp(self, out):
+        value = self._temp(tz_temperature())
+        if value is None:
+            self._warn_once('tz_temp', 'No TZ temperature source found')
+            return
+        out['GV5'] = value
+
     def gpu_temp(self, out):
         value = self._temp(gpu_temperature())
         if value is None:
             self._warn_once('gpu_temp', 'No GPU temperature source found')
             return
-        out['GV5'] = value
+        out['GV37'] = value
 
     def disk_temp(self, out):
         value = self._temp(disk_temperature(self._arg('disk_temp')))
@@ -362,7 +377,7 @@ class Collector:
             self._net_sample = (counters, time.time())
         except OSError:
             self._net_sample = None
-        order = ['load_avg', 'cpu_util', 'cpu_temp', 'gpu_temp', 'disk_temp',
+        order = ['load_avg', 'cpu_util', 'cpu_temp', 'gpu_temp', 'tz_temp',  'disk_temp',
                  'mem_usage', 'disk_capacity', 'disk_io_util', 'disk_iostats',
                  'net_util', 'net_errors', 'system_uptime']
         for name in order:

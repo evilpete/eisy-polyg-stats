@@ -11,7 +11,7 @@ Driver map
   ST              node online
   GV0  - GV2      load average  1 / 5 / 15 minute
   GV3             cpu utilization
-  GV4  - GV6      cpu / gpu / disk temperature
+  GV4  - GV6      cpu / tz / disk temperature
   GV7             memory used
   GV10 - GV17     filesystem capacity (up to 8 mount points)
   GV20            disk io utilization (busy time)
@@ -19,6 +19,7 @@ Driver map
   GV30 - GV32     network utilization  percent, rx kbit/s, tx kbit/s
   GV33            network errors + drops
   GV34 - GV36     system uptime  days, hours, minutes
+  GV37            GPU temperature
 """
 
 # Editor ids emitted into profile/editor/editors.xml
@@ -82,8 +83,11 @@ METRICS = [
         ('GV4', 'CPU Temperature', E_TEMP),
     ]),
     Metric('gpu_temp', 'GPU Temperature', [
-        ('GV5', 'GPU Temperature', E_TEMP),
+        ('GV37', 'GPU Temperature', E_TEMP),
     ], default=False),
+    Metric('tz_temp', 'TZ Temperature', [
+        ('GV5', 'TZ Temperature', E_TEMP),
+    ]),
     Metric('disk_temp', 'Disk Temperature', [
         ('GV6', 'Disk Temperature', E_TEMP),
     ], default=False, arg_help='device, e.g. /dev/ada0'),
@@ -164,6 +168,36 @@ def catalog():
                          metric.default))
     return rows
 
+
+def html_table():
+    """The README's metric table, rendered from the catalog."""
+    lines = [
+        '<table>',
+        '  <thead>',
+        '    <tr>',
+        '      <th>Metric</th><th>Driver</th><th>Shows in IoX</th><th>Unit</th><th>Default</th>',
+        '    </tr>',
+        '  </thead>',
+        '  <tbody>'
+    ]
+
+    previous = None
+    for name, driver, label, unit, default in catalog():
+        shown = name if name != previous else ''
+        previous = name
+
+        lines.append(
+            f'    <tr>'
+            f'<td>{shown}</td><td>{driver}</td><td>{label}</td><td>{unit or "--"}</td><td>{"on" if default else "off"}</td>'
+            f'</tr>'
+        )
+
+    lines.extend([
+        '  </tbody>',
+        '</table>'
+    ])
+
+    return '\n'.join(lines)
 
 def markdown_table():
     """The README's metric table, rendered from the catalog."""

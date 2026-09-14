@@ -1,0 +1,25 @@
+
+Sun 2026/09/13 03:37:32 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:37:39 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:37:45 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:39:39 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:39:42 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:39:49 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:41:59 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:46:59 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:49:25 	0	-170001	<s:Envelope><s:Body><u:UDIService xmlns:u="urn:udi-com:service:X_IoX_Service:1"><control>QUERY</control><action></action><flag>65531</flag><node>n009_stats</node></u:UDIService></s:Body></s:Envelope>
+
+Sun 2026/09/13 03:49:25 	0	-170001	<s:Envelope><s:Body><u:GetSystemStatus xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemStatus></s:Body></s:Envelope>
+
+Sun 2026/09/13 04:00:01 	0	-170001	<s:Envelope><s:Body><u:GetSystemTime xmlns:u="urn:udi-com:service:X_IoX_Service:1"></u:GetSystemTime></s:Body></s:Envelope>
+
+Sun 2026/09/13 10:00:00 	0	-140005	NS-1-Ping
+Sun 2026/09/13 12:02:14 	0	-10	[UNKNOWN     ] 02 78 

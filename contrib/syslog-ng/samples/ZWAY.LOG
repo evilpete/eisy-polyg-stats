@@ -1,0 +1,25 @@
+[2026-09-13 23:14:04.003] [I] [iox] Sensor 3: [11.0] intVal=0 prec=0 scale=1
+[2026-09-13 23:14:04.003] [I] [iox] ml_sensor_val: sending status: [ZY011_118] val=0 prec=0 uom=36
+[2026-09-13 23:14:04.003] [I] [iox] [ZY011_118       ] Update Status - uom=36 prec=0 val=0 [LUMIN] [0]
+[2026-09-13 23:14:04.003] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.3.val = 0.000000
+[2026-09-13 23:14:04.003] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.3 = Empty
+[2026-09-13 23:14:04.053] [D] [...] RECEIVED: ( 01 10 00 04 00 0B 06 31 05 01 2A 02 79 A8 00 01 08 23 )
+[2026-09-13 23:14:04.053] [D] [...] SENT ACK
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.data.lastReceived = 0 (0x00000000)
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1.deviceScale = 1 (0x00000001)
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1.scaleString = "°C"
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1.precision = **********
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1.intVal = **********
+[2026-09-13 23:14:04.053] [I] [iox] EVENT- STS - UYZCmdClassStsCallback::callback(intVal) uid=11 type=0x01 phantom=false child=false
+
+[2026-09-13 23:14:04.053] [I] [iox] UYZCmdClassCallback(1.intVal): Run callback for Value Update (type=0x01)
+[2026-09-13 23:14:04.053] [I] [iox] Sensor 1: [11.0] intVal=633 prec=1 scale=1
+[2026-09-13 23:14:04.053] [I] [iox] ml_sensor_val: sending status: [ZY011_118] val=633 prec=1 uom=17
+[2026-09-13 23:14:04.053] [I] [iox] [ZY011_118       ] Update Status - uom=17 prec=1 val=633 [CLITEMP] [633]
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1.val = 12.600000
+[2026-09-13 23:14:04.053] [D] [...] SETDATA devices.11.instances.0.commandClasses.49.data.1 = Empty
+[2026-09-13 23:14:21.152] [D] [...] Job 0x08: deleted from queue
+[2026-09-13 23:14:21.152] [D] [...] Job 0x0b: deleted from queue
+[2026-09-13 23:14:21.152] [D] [...] Job 0x0b: deleted from queue
+[2026-09-13 23:14:21.152] [D] [...] Job 0xd2: deleted from queue
+[2026-09-13 23:14:21.174] [D] [...] Job 0x4a: deleted from queue

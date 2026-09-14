@@ -1,0 +1,25 @@
+[2026-01-21 20:41:09.470] [I] [iox] IoX Shutdown: Disconnecting from Matter
+[2026-01-21 20:41:09.470] [D] [iox] [ZMATTER-MATTER|wifi] Skipping formal termination
+[2026-01-21 20:41:09.471] [D] [iox] [ZMATTER-MATTER|wifi] Calling Z-Matter termination listeners
+[2026-01-21 20:41:09.471] [D] [iox] UYMInterviewMgr - addRemoveCallback successfully removed
+[2026-01-21 20:41:09.471] [D] [iox]  ... CC getDataHolder( 2 , 1 , 6, onOff )
+[2026-01-21 20:41:09.471] [D] [iox] Remove Callback(onOff): Callback successfully removed [devices.2.endpoints.1.clusters.6.data.onOff]
+[2026-01-21 20:41:09.471] [D] [iox] Remove Callback(onOff): Callback object deleted for 2.1 clusterId=6 cbId=1
+[2026-01-21 20:41:09.471] [D] [iox] [ZMATTER-MATTER|wifi] Terminating Z-Matter
+[2026-01-21 20:41:09.475] [D] [...] Worker thread exit point
+[2026-01-21 20:41:09.475] [D] [...] Worker thread successfully finished
+[2026-01-21 20:41:09.475] [I] [chip] [FP] Shutting down FabricTable
+[2026-01-21 20:41:09.475] [I] [chip] [TS] Pending Last Known Good Time: 2023-10-14T01:16:48
+[2026-01-21 20:41:09.475] [D] [chip] [CTL] ZMEPersistentStorageImpl::SyncGetKeyValue key:g/lkgt
+[2026-01-21 20:41:09.475] [I] [chip] [TS] Previous Last Known Good Time: 2023-10-14T01:16:48
+[2026-01-21 20:41:09.475] [I] [chip] [TS] Reverted Last Known Good Time to previous value
+[2026-01-21 20:41:09.475] [I] [chip] [DL] writing settings to file (/tmp/chip_counters.ini-Q3uk6s)
+[2026-01-21 20:41:09.475] [I] [chip] [DL] renamed tmp file to file (/tmp/chip_counters.ini)
+[2026-01-21 20:41:09.475] [I] [chip] [DL] NVS set: chip-counters/total-operational-hours = 1575 (0x627)
+[2026-01-21 20:41:09.475] [E] [chip] [DL] Inet Layer shutdown
+[2026-01-21 20:41:09.475] [E] [chip] [DL] BLE shutdown
+[2026-01-21 20:41:09.475] [D] [...] SETDATA controller.data.bleExt.rx = Empty
+[2026-01-21 20:41:09.475] [D] [...] SETDATA controller.data.bleExt.tx = Empty
+[2026-01-21 20:41:09.475] [E] [chip] [DL] System Layer shutdown
+[2026-01-21 20:41:09.475] [I] [...] Saving configuration data to ./FILES/CONF/ZMCFG/zddx/MatterData.xml
+[2026-01-21 20:41:09.478] [I] [iox] IoX Shutdown: Disconnecting from Matter Complete

@@ -1,0 +1,25 @@
+[2026-09-13 23:15:39.253] [I] [iox] [ZB18117_001_125 ] Update Status - uom=78 prec=0 val=0 [GV5] [0]
+[2026-09-13 23:15:39.253] [I] [iox] [ZB18117_001_125 ] Update Status - uom=78 prec=0 val=0 [GV6] [0]
+[2026-09-13 23:15:39.253] [I] [iox] [ZB18117_001_125 ] Update Status - uom=78 prec=0 val=0 [GV7] [0]
+[2026-09-13 23:15:39.253] [I] [iox] [ZB18117_001_125 ] Update Status - uom=78 prec=0 val=0 [GV8] [0]
+[2026-09-13 23:15:39.253] [I] [iox] [ZB18117_001_125 ] Update Status - uom=78 prec=0 val=0 [GV9] [0]
+[2026-09-13 23:15:39.253] [D] [...] SETDATA devices.18117.endpoints.1.clusters.1280.data.delay = 0 (0x00000000)
+[2026-09-13 23:15:39.253] [I] [...] Job IncomingMessageHandler: Incoming message handle
+[2026-09-13 23:15:42.667] [I] [...] RECEIVED ASH: ( 04 F1 B1 A9 7D 31 2A 7D 31 B2 59 92 4A 25 AA 55 92 49 9C DD 6B 04 74 AC 98 74 F4 0B 9E 76 F8 7F 3E BE EB CD DC 96 0F 7E )
+[2026-09-13 23:15:42.667] [D] [...] RECEIVED ASH DATA: ( 04 F1 B1 A9 11 2A 11 B2 59 92 4A 25 AA 55 92 49 9C DD 6B 04 74 AC 98 74 F4 0B 9E 76 F8 7F 3E BE EB CD DC 96 0F 7E )
+[2026-09-13 23:15:42.667] [D] [...] SENDING ASH ACK: ( 81 60 59 7E )
+[2026-09-13 23:15:42.667] [I] [...] RECEIVED EZSP: ( B3 90 01 45 00 04 00 00 06 00 00 00 00 00 00 00 93 4C AF 99 62 FF FF 09 CD FD FF 04 01 01 19 00 00 02 )
+[2026-09-13 23:15:42.667] [D] [...] SETDATA controller.data.rssi = **********
+[2026-09-13 23:15:42.667] [D] [...] SETDATA controller.data.lqi = **********
+[2026-09-13 23:15:42.667] [D] [...] SETDATA devices.25241.data.lastReceived = 0 (0x00000000)
+[2026-09-13 23:15:42.667] [D] [...] Got incoming packet with type 4, from 25241:0 to :0, profile 0, clusterId 6
+[2026-09-13 23:15:42.667] [I] [...] Received broadcast message type: 4
+[2026-09-13 23:15:42.667] [I] [...] Job IncomingMessageHandler: Incoming message handle
+[2026-09-13 23:15:43.177] [I] [...] RECEIVED ASH: ( 14 F1 B1 A9 6B 2A 7D 33 4F A6 94 4A 23 AA 55 92 49 9C 4E 27 38 12 CE 67 3B 24 7E )
+[2026-09-13 23:15:43.177] [D] [...] RECEIVED ASH DATA: ( 14 F1 B1 A9 6B 2A 13 4F A6 94 4A 23 AA 55 92 49 9C 4E 27 38 12 CE 67 3B 24 7E )
+[2026-09-13 23:15:43.177] [D] [...] SENDING ASH ACK: ( 82 50 3A 7E )
+[2026-09-13 23:15:43.177] [I] [...] RECEIVED EZSP: ( B3 90 01 3F 00 06 FD FF 00 00 06 00 00 00 00 00 00 00 93 FF 00 00 )
+[2026-09-13 23:15:43.177] [D] [...] Send Message type 6 status 0x00 from endpoint.0 to device.65533.group.0.profile.0.endpoint.0.cluster.6 with option 0x0000, message type 255
+[2026-09-13 23:15:43.177] [D] [...] Send Message: ( zero-length buffer )
+[2026-09-13 23:15:43.177] [D] [...] Could not found job awaiting callback
+[2026-09-13 23:15:43.177] [I] [...] Job MessageSentHandler: Success

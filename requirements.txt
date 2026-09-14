@@ -1,0 +1,2 @@
+udi_interface>=3.0.51
+psutil>=5.9.0

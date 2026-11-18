@@ -1,4 +1,4 @@
-# eisy-polyg-stats
+# eisy-sys-stats
 
 A lightweight [Universal Devices](https://www.universal-devices.com/) EISY /
 Polyglot v3 plugin that monitors the local FreeBSD host and reports its system
